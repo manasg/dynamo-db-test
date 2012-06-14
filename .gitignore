@@ -1,4 +1,6 @@
 AwsCredentials.properties
-.class
+*.class
 bin
+.classpath
+.project
 
