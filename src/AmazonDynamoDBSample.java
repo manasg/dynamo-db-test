@@ -74,7 +74,7 @@ public class AmazonDynamoDBSample {
 	private static void init() throws Exception {
 		AWSCredentials credentials = new PropertiesCredentials(
 				AmazonDynamoDBSample.class
-						.getResourceAsStream("AwsCredentials.properties"));
+				.getResourceAsStream("AwsCredentials.properties"));
 
 		dynamoDB = new AmazonDynamoDBClient(credentials);
 	}
@@ -83,54 +83,55 @@ public class AmazonDynamoDBSample {
 		init();
 
 		try {
-			String tableName = "mg-ActiveUsers";
-
-            // Create a table with a primary key named key, which holds a string
+			String tableName = "mg-ActiveUsers-2";
+			String tableName2 = "mg-ActiveUsers-googleEnabled-2";
+			// Create a table with a primary key named key, which holds a string
 			// IMPORTANT : NEEDS to run one time only
-            /*
-            CreateTableRequest createTableRequest = new CreateTableRequest().withTableName(tableName)
-                .withKeySchema(new KeySchema(new KeySchemaElement().withAttributeName("key").withAttributeType("S")))
-                .withProvisionedThroughput(new ProvisionedThroughput().withReadCapacityUnits(10L).withWriteCapacityUnits(10L));
-            
-            TableDescription createdTableDescription = dynamoDB.createTable(createTableRequest).getTableDescription();
-            System.out.println("Created Table: " + createdTableDescription);
-			*/
-			
-			
-			
-			TestActiveUsers test = new TestActiveUsers();
-			ArrayList<ActiveUser> users = test.generateTestData(5);
-			
-			for (ActiveUser activeUser : users) {
-				//System.out.println(activeUser.toString());
-				//System.out.println();
 
-				Map<String, AttributeValue> item = ConvertToKV
-						.getActiveUserKV(activeUser);
-				
-				System.out.println(item.get("userName"));
-				long t = new Long(item.get("lastUpdateTime").getN());
-				System.out.println(new Date(t));				
-				//System.out.println(new Date(lastUpdateTime));
-				System.out.println();
-				
-				PutItemRequest putItemRequest = new PutItemRequest(tableName,item);
-				PutItemResult putItemResult = dynamoDB.putItem(putItemRequest);
-				System.out.println("Result: " + putItemResult);
+			/*			KeySchema k = new KeySchema();
+			k.setHashKeyElement(new KeySchemaElement().withAttributeName("key").withAttributeType("S"));
+
+            CreateTableRequest createTableRequest = new CreateTableRequest().withTableName(tableName)
+                .withKeySchema(k)
+                .withProvisionedThroughput(new ProvisionedThroughput().withReadCapacityUnits(10L).withWriteCapacityUnits(10L));
+
+            dynamoDB.createTable(createTableRequest);
+
+            // Secondary INDEX TODO - for sure there has to be a less VERBOSE way!
+            k = new KeySchema();
+			k.setHashKeyElement(new KeySchemaElement().withAttributeName("isGoogleEnabled").withAttributeType("N"));
+			k.setRangeKeyElement(new KeySchemaElement().withAttributeName("key").withAttributeType("S"));
+
+            createTableRequest = new CreateTableRequest().withTableName(tableName2)
+                    .withKeySchema(k)
+                    .withProvisionedThroughput(new ProvisionedThroughput().withReadCapacityUnits(10L).withWriteCapacityUnits(10L));
+            dynamoDB.createTable(createTableRequest);    */
+
+
+			TestActiveUsers test = new TestActiveUsers();
+			ArrayList<ActiveUser> users = test.generateTestData(10000,"t4-");
+
+			long start = new Date().getTime();
+			for (ActiveUser activeUser : users) {
+
+				Map<String, AttributeValue> item = ConvertToKV.getActiveUserKV(activeUser);
+				Map<String, AttributeValue> itemShort = ConvertToKV.getActiveUserKVShort(activeUser, "isGoogleEnabled");
+
+
+				dynamoDBPut(tableName, item);
+				dynamoDBPut(tableName2, itemShort);
 
 			}
 
+			long end = new Date().getTime();
+
 			System.out.println();
-			System.out.println("Done adding to DB");
-			
-			//sampleSearch1(tableName);
-			sampleSearch2(tableName);
-			//
+			System.out.println("Done adding to DB : Took millis : " + (end-start));
 
 		} catch (AmazonServiceException ase) {
 			System.out
-					.println("Caught an AmazonServiceException, which means your request made it "
-							+ "to AWS, but was rejected with an error response for some reason.");
+			.println("Caught an AmazonServiceException, which means your request made it "
+					+ "to AWS, but was rejected with an error response for some reason.");
 			System.out.println("Error Message:    " + ase.getMessage());
 			System.out.println("HTTP Status Code: " + ase.getStatusCode());
 			System.out.println("AWS Error Code:   " + ase.getErrorCode());
@@ -138,69 +139,21 @@ public class AmazonDynamoDBSample {
 			System.out.println("Request ID:       " + ase.getRequestId());
 		} catch (AmazonClientException ace) {
 			System.out
-					.println("Caught an AmazonClientException, which means the client encountered "
-							+ "a serious internal problem while trying to communicate with AWS, "
-							+ "such as not being able to access the network.");
+			.println("Caught an AmazonClientException, which means the client encountered "
+					+ "a serious internal problem while trying to communicate with AWS, "
+					+ "such as not being able to access the network.");
 			System.out.println("Error Message: " + ace.getMessage());
 		}
 	}
 
-	private static void sampleSearch1(String tableName) {
-		System.out.println();
-		
-		// Get googleEnabled Accounts and print their gmail tokens + usernames
-		HashMap<String, Condition> scanFilter = new HashMap<String, Condition>();
-		Condition condition = new Condition().withComparisonOperator(
-				ComparisonOperator.EQ.toString()).withAttributeValueList(
-				new AttributeValue().withN("1"));
-		scanFilter.put("isGoogleEnabled", condition);
-		ScanRequest scanRequest = new ScanRequest(tableName)
-				.withScanFilter(scanFilter);
-		ScanResult scanResult = dynamoDB.scan(scanRequest);
-		System.out.println("Result: " + scanResult);
-		
-		Iterator<Map<String, AttributeValue>> itr = scanResult.getItems().iterator();
-		while(itr.hasNext()) {
-			HashMap<String, AttributeValue> item = (HashMap<String, AttributeValue>) itr.next();
-			System.out.println();
-			System.out.println(item.get("userName"));
-			List<String> _gmailAccounts = item.get("gmail").getSS();
-			for (String _account : _gmailAccounts) {
-				System.out.println(item.get(_account).getS());
-			}
-		}
+	private static PutItemResult dynamoDBPut(String tableName,
+			Map<String, AttributeValue> item) {
+		PutItemRequest putItemRequest = new PutItemRequest(tableName,item);
+		PutItemResult putItemResult = dynamoDB.putItem(putItemRequest);
+		System.out.println("Result: " + putItemResult);
+		return putItemResult;
 	}
-	
-	private static void sampleSearch2(String tableName) {
-		System.out.println();
-		
-		// Get all users - who used the app in the last 30 mins
-		// 30 mins = 30 * 60 * 1000 = 1800000 ms
-		long timeLimit = new Date().getTime() - 1800000;
-		System.out.println("Thirty mins ago " + timeLimit + " OR " + new Date(timeLimit));
-		
-		HashMap<String, Condition> scanFilter = new HashMap<String, Condition>();
-		
-		Condition condition = new Condition().withComparisonOperator(
-				ComparisonOperator.GT.toString()).withAttributeValueList(
-				new AttributeValue().withN(Long.toString(timeLimit)));
-		scanFilter.put("lastUpdateTime", condition);
-		
-		ScanRequest scanRequest = new ScanRequest(tableName).withScanFilter(scanFilter);
-		ScanResult scanResult = dynamoDB.scan(scanRequest);
 
-		//System.out.println(scanResult);
-		Iterator<Map<String, AttributeValue>> itr = scanResult.getItems().iterator();
-		while(itr.hasNext()) {
-			HashMap<String, AttributeValue> item = (HashMap<String, AttributeValue>) itr.next();
-			System.out.println();
-			System.out.println(item.get("userName"));
-			System.out.println(item.get("lastUpdateTime") + " OR " + new Date(new Long(item.get("lastUpdateTime").getN())));
-			List<String> _gmailAccounts = item.get("gmail").getSS();
-			for (String _account : _gmailAccounts) {
-				System.out.println(item.get(_account).getS());
-			}
-		}
-	}
+
 
 }

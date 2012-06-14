@@ -10,6 +10,24 @@ import com.amazonaws.services.dynamodb.model.AttributeValue;
 
 public class ConvertToKV {
 	
+	public static Map<String, AttributeValue> getActiveUserKVShort(ActiveUser activeUser, String rangeKey) {
+		Map<String, AttributeValue> item = new HashMap<String, AttributeValue>();
+		
+		item.put("key", new AttributeValue().withS(activeUser.getKey()));
+		
+		//TODO : This has to be more generic - but remember we are using JAVA :( instead of Ruby/Python
+		if (rangeKey.equals("isGoogleEnabled")) {
+		
+			if (activeUser.isGoogleEnabled()) {
+				item.put("isGoogleEnabled", new AttributeValue().withN("1"));	
+			} else {
+				item.put("isGoogleEnabled", new AttributeValue().withN("0"));
+			}
+		}
+		
+		return item;
+	}
+	
 	public static Map<String, AttributeValue> getActiveUserKV(ActiveUser activeUser) {
 		
 		Map<String, AttributeValue> item = new HashMap<String, AttributeValue>();

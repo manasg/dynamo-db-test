@@ -9,7 +9,7 @@ public class Runner {
 	public static void main(String[] args) {
 		
 		TestActiveUsers test = new TestActiveUsers();
-		ArrayList<ActiveUser> users = test.generateTestData(3);
+		ArrayList<ActiveUser> users = test.generateTestData(3,"");
 		
 		for (ActiveUser activeUser : users) {
 			System.out.println(activeUser.toString());

@@ -6,7 +6,11 @@ import java.util.HashMap;
 import java.util.Random;
 
 public class TestActiveUsers {
-	public ArrayList<ActiveUser> generateTestData(int numUsers) {
+	/*
+	 * prefix is appended to keys.
+	 */
+	public ArrayList<ActiveUser> generateTestData(int numUsers, String prefix) {
+		
 		ArrayList<ActiveUser> activeUsers = new ArrayList<ActiveUser>();
 		
 		Random generator = new Random(12323);
@@ -14,7 +18,7 @@ public class TestActiveUsers {
 		for(int i=0; i<numUsers; i++) {
 			String index = Integer.toString(i);
 			
-			String key = index + "_KKKKcd54c7c2af5cf3a80";
+			String key = prefix + index + "_KKKKcd54c7c2af5cf3a80";
 			String username = index + "_username";
 			
 			HashMap<String, HashMap<String, String>> emailAccounts = getEmailAccounts(index);
@@ -27,7 +31,7 @@ public class TestActiveUsers {
 				facebookAccount.put(index+"facebook", "FFFF128973213812");	
 			}
 			
-			Boolean isGoogleEnabled = generator.nextInt()%2 == 0 ? true : false;
+			Boolean isGoogleEnabled = i%2 == 0 ? true : false;
 
 			long lastUpdateTime = new Date().getTime() - (15*i*60*1000);
 			
