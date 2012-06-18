@@ -41,15 +41,37 @@ public class DynamoDBQuery {
 		System.out.println("Took millis : "+ (end-start));
 		
 	}
-	
 	private static void printAllGoogleEnabled(String tableName, String indexTable) {
+		printAllGoogleEnabledPaginated(tableName, indexTable, 2);
+	}
+	
+	private static void printAllGoogleEnabledPaginated(String tableName, String indexTable, int resultLimit) {
 		QueryRequest q = new QueryRequest();
 		
 		// hashKey of the table was set in the tableDefinition
 		q.setTableName(indexTable);
 		q.setHashKeyValue(new AttributeValue().withN("1"));
+		q.setLimit(resultLimit);
+		
 		QueryResult queryResult = dynamoDB.query(q);
 		
+		Key lastEvaluatedKey = queryResult.getLastEvaluatedKey();
+		printResults(tableName, queryResult);
+		
+		// Now using the last evaluated key and not limiting results
+		q = new QueryRequest();
+		
+		q.setTableName(indexTable);
+		q.setHashKeyValue(new AttributeValue().withN("1"));
+		
+		q.setExclusiveStartKey(lastEvaluatedKey);
+		
+		queryResult = dynamoDB.query(q);
+		
+		printResults(tableName, queryResult);
+	}
+
+	private static void printResults(String tableName, QueryResult queryResult) {
 		Iterator<Map<String, AttributeValue>> itr = queryResult.getItems().iterator();
 		int count = 0;
 		while(itr.hasNext()) {
