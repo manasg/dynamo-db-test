@@ -88,7 +88,10 @@ public class AmazonDynamoDBSample {
 			// Create a table with a primary key named key, which holds a string
 			// IMPORTANT : NEEDS to run one time only
 
-			/*			KeySchema k = new KeySchema();
+			boolean createTables = false;
+			
+			if (createTables) {
+			KeySchema k = new KeySchema();
 			k.setHashKeyElement(new KeySchemaElement().withAttributeName("key").withAttributeType("S"));
 
             CreateTableRequest createTableRequest = new CreateTableRequest().withTableName(tableName)
@@ -105,11 +108,14 @@ public class AmazonDynamoDBSample {
             createTableRequest = new CreateTableRequest().withTableName(tableName2)
                     .withKeySchema(k)
                     .withProvisionedThroughput(new ProvisionedThroughput().withReadCapacityUnits(10L).withWriteCapacityUnits(10L));
-            dynamoDB.createTable(createTableRequest);    */
+            dynamoDB.createTable(createTableRequest);
+            
 
-
+			}
+			
+			
 			TestActiveUsers test = new TestActiveUsers();
-			ArrayList<ActiveUser> users = test.generateTestData(10000,"t4-");
+			ArrayList<ActiveUser> users = test.generateTestData(10,"t4-");
 
 			long start = new Date().getTime();
 			for (ActiveUser activeUser : users) {
